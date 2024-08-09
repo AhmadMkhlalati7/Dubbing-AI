@@ -1,1 +1,6 @@
 dubbed_file.mp4
+data/
+.env
+.venv
+flagged/
+.vscode
