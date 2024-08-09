@@ -67,4 +67,4 @@ app = gr.TabbedInterface(
 )
 
 if __name__ == "__main__":
-    app.launch()
+    app.launch(server_port=8081)
