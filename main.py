@@ -1,10 +1,8 @@
-import tkinter as tk
-from tkinter import messagebox
-from tkinter import filedialog
-from dubbing_utils import download_dubbed_file, wait_for_dubbing_completion
-from elevenlabs.client import ElevenLabs
+from flask import Flask, request, render_template_string, jsonify
 import os
 from dotenv import load_dotenv
+from dubbing_utils import download_dubbed_file, wait_for_dubbing_completion
+from elevenlabs.client import ElevenLabs
 
 # Load environment variables
 load_dotenv()
@@ -13,6 +11,33 @@ if not ELEVENLABS_API_KEY:
     raise ValueError("ELEVENLABS_API_KEY environment variable not found.")
 
 client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+
+app = Flask(__name__)
+
+HTML_TEMPLATE = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dubbing Tool</title>
+</head>
+<body>
+    <h1>Dubbing Tool</h1>
+    <form action="/dub" method="post">
+        <label for="source_url">Source URL:</label>
+        <input type="text" id="source_url" name="source_url" required><br><br>
+        <label for="source_language">Source Language:</label>
+        <input type="text" id="source_language" name="source_language" required><br><br>
+        <label for="target_language">Target Language:</label>
+        <input type="text" id="target_language" name="target_language" required><br><br>
+        <input type="submit" value="Dub Video">
+    </form>
+    {% if result %}
+        <h2>Result</h2>
+        <p>{{ result }}</p>
+    {% endif %}
+</body>
+</html>
+'''
 
 def create_dub_from_url(source_url, source_language, target_language):
     try:
@@ -41,36 +66,21 @@ def create_dub_from_url(source_url, source_language, target_language):
         print("Dubbing did not complete successfully.")
         return None
 
-def on_dub_button_click():
-    source_url = url_entry.get()
-    source_language = source_lang_entry.get()
-    target_language = target_lang_entry.get()
+@app.route('/', methods=['GET'])
+def index():
+    return render_template_string(HTML_TEMPLATE)
+
+@app.route('/dub', methods=['POST'])
+def dub():
+    source_url = request.form['source_url']
+    source_language = request.form['source_language']
+    target_language = request.form['target_language']
 
     result = create_dub_from_url(source_url, source_language, target_language)
     if result:
-        messagebox.showinfo("Success", f"Dubbing was successful! File saved at: {result}")
+        return render_template_string(HTML_TEMPLATE, result=f"Dubbing was successful! File saved at: {result}")
     else:
-        messagebox.showerror("Failure", "Dubbing failed or timed out.")
+        return render_template_string(HTML_TEMPLATE, result="Dubbing failed or timed out.")
 
-# Create the main window
-root = tk.Tk()
-root.title("Dubbing Tool")
-
-# Create and place the widgets
-tk.Label(root, text="Source URL:").grid(row=0, column=0, padx=10, pady=10)
-url_entry = tk.Entry(root, width=50)
-url_entry.grid(row=0, column=1, padx=10, pady=10)
-
-tk.Label(root, text="Source Language:").grid(row=1, column=0, padx=10, pady=10)
-source_lang_entry = tk.Entry(root, width=50)
-source_lang_entry.grid(row=1, column=1, padx=10, pady=10)
-
-tk.Label(root, text="Target Language:").grid(row=2, column=0, padx=10, pady=10)
-target_lang_entry = tk.Entry(root, width=50)
-target_lang_entry.grid(row=2, column=1, padx=10, pady=10)
-
-dub_button = tk.Button(root, text="Dub Video", command=on_dub_button_click)
-dub_button.grid(row=3, column=0, columnspan=2, pady=20)
-
-# Start the GUI event loop
-root.mainloop()
+if __name__ == "__main__":
+    app.run(port=8081)
