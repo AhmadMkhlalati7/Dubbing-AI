@@ -73,9 +73,9 @@ if __name__ == "__main__":
     iface = gr.Interface(
         fn=dub_video_interface,
         inputs=[
-            gr.inputs.Textbox(label="Source URL"),
-            gr.inputs.Textbox(label="Source Language"),
-            gr.inputs.Textbox(label="Target Language")
+            gr.Textbox(label="Source URL"),
+            gr.Textbox(label="Source Language"),
+            gr.Textbox(label="Target Language")
         ],
         outputs="text",
         title="Dubbing Service",
