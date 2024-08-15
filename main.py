@@ -84,4 +84,4 @@ def dub():
         return jsonify({'error': 'Dubbing failed or timed out.'}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=8081)
