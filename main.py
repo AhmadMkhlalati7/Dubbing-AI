@@ -3,7 +3,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from dubbing_utils import download_dubbed_file, wait_for_dubbing_completion
 from elevenlabs.client import ElevenLabs
-from flask import Flask, request, jsonify, render_template
+import gradio as gr
 
 # Load environment variables
 load_dotenv()
@@ -17,8 +17,6 @@ if not ELEVENLABS_API_KEY:
     )
 
 client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
-
-app = Flask(__name__)
 
 def create_dub_from_url(
     source_url: str,
@@ -63,25 +61,26 @@ def create_dub_from_url(
         print("Dubbing did not complete successfully.")
         return None
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/dub', methods=['POST'])
-def dub():
-    data = request.json
-    source_url = data.get('source_url')
-    source_language = data.get('source_language')
-    target_language = data.get('target_language')
-
-    if not source_url or not source_language or not target_language:
-        return jsonify({'error': 'Missing required parameters'}), 400
-
+def dub_video_interface(source_url, source_language, target_language):
     result = create_dub_from_url(source_url, source_language, target_language)
     if result:
-        return jsonify({'message': 'Dubbing was successful!', 'file_path': result})
+        return f"Dubbing was successful! File saved at: {result}"
     else:
-        return jsonify({'error': 'Dubbing failed or timed out.'}), 500
+        return "Dubbing failed or timed out."
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8081)
+    # Create the Gradio interface
+    iface = gr.Interface(
+        fn=dub_video_interface,
+        inputs=[
+            gr.inputs.Textbox(label="Source URL"),
+            gr.inputs.Textbox(label="Source Language"),
+            gr.inputs.Textbox(label="Target Language")
+        ],
+        outputs="text",
+        title="Dubbing Service",
+        description="Enter the URL of the video, the source language, and the target language to create a dubbed version."
+    )
+
+    # Launch the Gradio interface
+    iface.launch(server_name="0.0.0.0", server_port=8081)
