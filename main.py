@@ -1,39 +1,20 @@
-import gradio as gr
-import os
-from typing import Optional
-from dotenv import load_dotenv
+import tkinter as tk
+from tkinter import messagebox
+from tkinter import filedialog
 from dubbing_utils import download_dubbed_file, wait_for_dubbing_completion
 from elevenlabs.client import ElevenLabs
+import os
+from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-
-# Retrieve the API key
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 if not ELEVENLABS_API_KEY:
-    raise ValueError(
-        "ELEVENLABS_API_KEY environment variable not found. "
-        "Please set the API key in your environment variables."
-    )
+    raise ValueError("ELEVENLABS_API_KEY environment variable not found.")
 
 client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
-def create_dub_from_url(
-    source_url: str,
-    source_language: str,
-    target_language: str,
-) -> str:
-    """
-    Downloads a video from a URL, and creates a dubbed version in the target language.
-
-    Args:
-        source_url (str): The URL of the source video to dub. Can be a YouTube link, TikTok, X (Twitter) or a Vimeo link.
-        source_language (str): The language of the source video.
-        target_language (str): The target language to dub into.
-
-    Returns:
-        str: The file path of the dubbed file or an error message if the operation failed.
-    """
+def create_dub_from_url(source_url, source_language, target_language):
     try:
         response = client.dubbing.dub_a_video_or_an_audio_file(
             source_url=source_url,
@@ -41,37 +22,55 @@ def create_dub_from_url(
             mode="automatic",
             source_lang=source_language,
             num_speakers=1,
-            watermark=True,  # reduces the characters used
+            watermark=True,
         )
     except Exception as e:
-        return f"Error during dubbing request: {e}"
+        print(f"Error during dubbing request: {e}")
+        return None
 
     dubbing_id = response.dubbing_id
 
     if wait_for_dubbing_completion(dubbing_id):
         try:
             output_file_path = download_dubbed_file(dubbing_id, target_language)
-            return f"Dubbing was successful! File saved at: {output_file_path}"
+            return output_file_path
         except Exception as e:
-            return f"Error during file download: {e}"
+            print(f"Error during file download: {e}")
+            return None
     else:
-        return "Dubbing did not complete successfully."
+        print("Dubbing did not complete successfully.")
+        return None
 
-# Gradio Interface
-def gradio_interface(source_url, source_language, target_language):
-    return create_dub_from_url(source_url, source_language, target_language)
+def on_dub_button_click():
+    source_url = url_entry.get()
+    source_language = source_lang_entry.get()
+    target_language = target_lang_entry.get()
 
-iface = gr.Interface(
-    fn=gradio_interface,
-    inputs=[
-        gr.Textbox(label="Source URL"),
-        gr.Textbox(label="Source Language"),
-        gr.Textbox(label="Target Language"),
-    ],
-    outputs="text",
-    title="Video Dubbing Interface",
-    description="Upload a video URL and get a dubbed version in the target language.",
-)
+    result = create_dub_from_url(source_url, source_language, target_language)
+    if result:
+        messagebox.showinfo("Success", f"Dubbing was successful! File saved at: {result}")
+    else:
+        messagebox.showerror("Failure", "Dubbing failed or timed out.")
 
-if __name__ == "__main__":
-    iface.launch(server_name="0.0.0.0", server_port=8081,debug=True)
+# Create the main window
+root = tk.Tk()
+root.title("Dubbing Tool")
+
+# Create and place the widgets
+tk.Label(root, text="Source URL:").grid(row=0, column=0, padx=10, pady=10)
+url_entry = tk.Entry(root, width=50)
+url_entry.grid(row=0, column=1, padx=10, pady=10)
+
+tk.Label(root, text="Source Language:").grid(row=1, column=0, padx=10, pady=10)
+source_lang_entry = tk.Entry(root, width=50)
+source_lang_entry.grid(row=1, column=1, padx=10, pady=10)
+
+tk.Label(root, text="Target Language:").grid(row=2, column=0, padx=10, pady=10)
+target_lang_entry = tk.Entry(root, width=50)
+target_lang_entry.grid(row=2, column=1, padx=10, pady=10)
+
+dub_button = tk.Button(root, text="Dub Video", command=on_dub_button_click)
+dub_button.grid(row=3, column=0, columnspan=2, pady=20)
+
+# Start the GUI event loop
+root.mainloop()
