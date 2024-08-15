@@ -1,30 +1,27 @@
-from flask import Flask, render_template, request
+import gradio as gr
 from dubbing_utils import create_dub_from_url
 
-app = Flask(__name__)
-
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/dub', methods=['POST'])
-def dub_video():
-    source_url = request.form.get('source_url')
-    source_language = request.form.get('source_language')
-    target_language = request.form.get('target_language')
-
+def dub_video(source_url, source_language, target_language):
     result = create_dub_from_url(source_url, source_language, target_language)
-
     if result:
-        # Display success message or provide a download link in the template
-        return render_template('success.html', output_file_path=result)
+        return "Dubbing successful! File saved at:", result
     else:
-        # Display error message in the template
-        return render_template('error.html')
-    
+        return "Dubbing failed or timed out."
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8081)
+inputs = [
+    gr.Textbox(label="Source URL"),
+    gr.Textbox(label="Source Language"),
+    gr.Textbox(label="Target Language")
+]
 
- 
+outputs = gr.Markdown(label="Output")
+
+iface = gr.Interface(
+    fn=dub_video,
+    inputs=inputs,
+    outputs=outputs,
+    title="Video Dubbing"
+)
+
+if __name__ == "__main__":
+    iface.launch()
