@@ -4,57 +4,21 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Dubbing Service</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            padding-top: 20px;
-        }
-        .container {
-            max-width: 600px;
-        }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-center mb-4">Dubbing Service</h1>
+    <div>
+        <h1>Dubbing Service</h1>
         <form id="dub-form">
-            <div class="form-group">
-                <label for="source_url">Source URL:</label>
-                <input type="text" class="form-control" id="source_url" name="source_url" required>
-            </div>
-            <div class="form-group">
-                <label for="source_language">Source Language:</label>
-                <select class="form-control" id="source_language" name="source_language" required>
-                    <option value="" disabled selected>Select Source Language</option>
-                    <option value="en">English</option>
-                    <option value="ar">Arabic</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <!-- Add more languages as needed -->
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="target_language">Target Language:</label>
-                <select class="form-control" id="target_language" name="target_language" required>
-                    <option value="" disabled selected>Select Target Language</option>
-                    <option value="en">English</option>
-                    <option value="ar">Arabic</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <!-- Add more languages as needed -->
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <label for="source_url">Source URL:</label>
+            <input type="text" id="source_url" name="source_url" required><br><br>
+            <label for="source_language">Source Language:</label>
+            <input type="text" id="source_language" name="source_language" required><br><br>
+            <label for="target_language">Target Language:</label>
+            <input type="text" id="target_language" name="target_language" required><br><br>
+            <button type="submit">Submit</button>
         </form>
-        <div id="response" class="mt-4"></div>
+        <p id="response"></p>
     </div>
-
-    <!-- Bootstrap and necessary JavaScript -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
     <script>
         document.getElementById('dub-form').addEventListener('submit', function(event) {
             event.preventDefault();
@@ -65,7 +29,7 @@
                 target_language: formData.get('target_language')
             };
 
-            fetch('/dub', {
+            fetch('/app2/dub', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -74,22 +38,10 @@
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('response').innerHTML = `
-                    <div class="alert alert-info">
-                        <h4 class="alert-heading">Dubbing Result</h4>
-                        <p>${data.message}</p>
-                        ${data.file_path ? `<a href="${data.file_path}" class="btn btn-link">Download Dubbed File</a>` : ''}
-                    </div>
-                `;
+                document.getElementById('response').innerText = JSON.stringify(data);
             })
             .catch((error) => {
                 console.error('Error:', error);
-                document.getElementById('response').innerHTML = `
-                    <div class="alert alert-danger">
-                        <h4 class="alert-heading">Error</h4>
-                        <p>Something went wrong. Please try again.</p>
-                    </div>
-                `;
             });
         });
     </script>
