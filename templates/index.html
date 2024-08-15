@@ -65,7 +65,7 @@
                 target_language: formData.get('target_language')
             };
 
-            fetch('/app2/dub', {
+            fetch('/dub', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -78,6 +78,7 @@
                     <div class="alert alert-info">
                         <h4 class="alert-heading">Dubbing Result</h4>
                         <p>${data.message}</p>
+                        ${data.file_path ? `<a href="${data.file_path}" class="btn btn-link">Download Dubbed File</a>` : ''}
                     </div>
                 `;
             })
