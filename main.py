@@ -1,9 +1,9 @@
+import gradio as gr
 import os
 from typing import Optional
 from dotenv import load_dotenv
 from dubbing_utils import download_dubbed_file, wait_for_dubbing_completion
 from elevenlabs.client import ElevenLabs
-import gradio as gr
 
 # Load environment variables
 load_dotenv()
@@ -22,7 +22,7 @@ def create_dub_from_url(
     source_url: str,
     source_language: str,
     target_language: str,
-) -> Optional[str]:
+) -> str:
     """
     Downloads a video from a URL, and creates a dubbed version in the target language.
 
@@ -32,7 +32,7 @@ def create_dub_from_url(
         target_language (str): The target language to dub into.
 
     Returns:
-        Optional[str]: The file path of the dubbed file or None if operation failed.
+        str: The file path of the dubbed file or an error message if the operation failed.
     """
     try:
         response = client.dubbing.dub_a_video_or_an_audio_file(
@@ -44,43 +44,34 @@ def create_dub_from_url(
             watermark=True,  # reduces the characters used
         )
     except Exception as e:
-        print(f"Error during dubbing request: {e}")
-        return None
+        return f"Error during dubbing request: {e}"
 
     dubbing_id = response.dubbing_id
-    print(f"Dubbing ID: {dubbing_id}")  # Debugging line
 
     if wait_for_dubbing_completion(dubbing_id):
         try:
             output_file_path = download_dubbed_file(dubbing_id, target_language)
-            return output_file_path
+            return f"Dubbing was successful! File saved at: {output_file_path}"
         except Exception as e:
-            print(f"Error during file download: {e}")
-            return None
+            return f"Error during file download: {e}"
     else:
-        print("Dubbing did not complete successfully.")
-        return None
+        return "Dubbing did not complete successfully."
 
-def dub_video_interface(source_url, source_language, target_language):
-    result = create_dub_from_url(source_url, source_language, target_language)
-    if result:
-        return f"Dubbing was successful! File saved at: {result}"
-    else:
-        return "Dubbing failed or timed out."
+# Gradio Interface
+def gradio_interface(source_url, source_language, target_language):
+    return create_dub_from_url(source_url, source_language, target_language)
+
+iface = gr.Interface(
+    fn=gradio_interface,
+    inputs=[
+        gr.Textbox(label="Source URL"),
+        gr.Textbox(label="Source Language"),
+        gr.Textbox(label="Target Language"),
+    ],
+    outputs="text",
+    title="Video Dubbing Interface",
+    description="Upload a video URL and get a dubbed version in the target language.",
+)
 
 if __name__ == "__main__":
-    # Create the Gradio interface
-    iface = gr.Interface(
-        fn=dub_video_interface,
-        inputs=[
-            gr.Textbox(label="Source URL"),
-            gr.Textbox(label="Source Language"),
-            gr.Textbox(label="Target Language")
-        ],
-        outputs="text",
-        title="Dubbing Service",
-        description="Enter the URL of the video, the source language, and the target language to create a dubbed version."
-    )
-
-    # Launch the Gradio interface
-    iface.launch(server_name="0.0.0.0", server_port=8081)
+    iface.launch()
