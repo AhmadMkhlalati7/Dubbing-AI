@@ -1,6 +1,5 @@
 import os
 from typing import Optional
-
 from dotenv import load_dotenv
 from dubbing_utils import download_dubbed_file, wait_for_dubbing_completion
 from elevenlabs.client import ElevenLabs
@@ -16,8 +15,9 @@ if not ELEVENLABS_API_KEY:
         "Please set the API key in your environment variables."
     )
 
-client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+print(f"ELEVENLABS_API_KEY loaded: {ELEVENLABS_API_KEY[:4]}...")  # Debugging line
 
+client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
 def create_dub_from_url(
     source_url: str,
@@ -35,23 +35,32 @@ def create_dub_from_url(
     Returns:
         Optional[str]: The file path of the dubbed file or None if operation failed.
     """
-
-    response = client.dubbing.dub_a_video_or_an_audio_file(
-        source_url=source_url,
-        target_lang=target_language,
-        mode="automatic",
-        source_lang=source_language,
-        num_speakers=1,
-        watermark=True,  # reduces the characters used
-    )
-
-    dubbing_id = response.dubbing_id
-    if wait_for_dubbing_completion(dubbing_id):
-        output_file_path = download_dubbed_file(dubbing_id, target_language)
-        return output_file_path
-    else:
+    try:
+        response = client.dubbing.dub_a_video_or_an_audio_file(
+            source_url=source_url,
+            target_lang=target_language,
+            mode="automatic",
+            source_lang=source_language,
+            num_speakers=1,
+            watermark=True,  # reduces the characters used
+        )
+    except Exception as e:
+        print(f"Error during dubbing request: {e}")
         return None
 
+    dubbing_id = response.dubbing_id
+    print(f"Dubbing ID: {dubbing_id}")  # Debugging line
+
+    if wait_for_dubbing_completion(dubbing_id):
+        try:
+            output_file_path = download_dubbed_file(dubbing_id, target_language)
+            return output_file_path
+        except Exception as e:
+            print(f"Error during file download: {e}")
+            return None
+    else:
+        print("Dubbing did not complete successfully.")
+        return None
 
 if __name__ == "__main__":
     source_url = "https://www.youtube.com/shorts/nTll0MezgSw"  # Charlie bit my finger
